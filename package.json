@@ -20,8 +20,11 @@
   "dependencies": {
     "@typescript-eslint/parser": "^5.25.0",
     "cli-progress": "^3.11.1",
+    "cross-fetch": "^3.1.5",
     "dotenv": "^16.0.1",
-    "saxes": "^6.0.0-rc.1"
+    "reflect-metadata": "^0.1.13",
+    "saxes": "^6.0.0-rc.1",
+    "typedi": "^0.10.0"
   },
   "scripts": {
     "lint": "yarn run eslint ./src",
@@ -30,6 +33,6 @@
     "prettier:check": "prettier --check \"**/*.+(js|jsx|ts|tsx|json|css|md)\" ",
     "pretty-quick:fix": "pretty-quick --staged --patern \"**/*.+(js|jsx|ts|tsx|json|css|md)\"",
     "prepare": "husky install",
-    "dev": "ts-node ./src/index.ts"
+    "dev": "DOWNLOAD_TYPE=COMPLETE ts-node ./src/index.ts"
   }
 }
