@@ -1,0 +1,35 @@
+{
+  "name": "ruianimporter",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:Digiza-s-r-o/ruianimporter.git",
+  "author": "mivl <vlach@fortetto.com>",
+  "license": "MIT",
+  "private": false,
+  "devDependencies": {
+    "@types/cli-progress": "^3.11.0",
+    "@typescript-eslint/eslint-plugin": "^5.25.0",
+    "eslint": "^8.15.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "husky": "^8.0.1",
+    "prettier": "^2.6.2",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.4"
+  },
+  "dependencies": {
+    "@typescript-eslint/parser": "^5.25.0",
+    "cli-progress": "^3.11.1",
+    "dotenv": "^16.0.1",
+    "saxes": "^6.0.0-rc.1"
+  },
+  "scripts": {
+    "lint": "yarn run eslint ./src",
+    "typescript": "tsc --noEmit",
+    "prettier:fix": "prettier --write \"**/*.+(js|jsx|ts|tsx|json|css|md)\" ",
+    "prettier:check": "prettier --check \"**/*.+(js|jsx|ts|tsx|json|css|md)\" ",
+    "pretty-quick:fix": "pretty-quick --staged --patern \"**/*.+(js|jsx|ts|tsx|json|css|md)\"",
+    "prepare": "husky install",
+    "dev": "ts-node ./src/index.ts"
+  }
+}
