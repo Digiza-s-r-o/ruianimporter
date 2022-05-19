@@ -50,6 +50,15 @@ export class Downloader {
 
   async startDownloading(link: string, savePath: string, startCallback: (size: number) => void, advanceCallback: (size: number) => void | undefined, finishCallback: () => void | undefined): Promise<boolean> {
     const url = new URL(link)
+
+    const filename = link.split("/").pop()
+    if (!filename) {
+      throw new Error(`Unable to get filename for URL ${link}`)
+    }
+
+    const filePath = path.join(savePath, filename)
+    const file = fs.createWriteStream(filePath);
+
     return new Promise((resolve) => {
         const stream = https.get(url)
 
@@ -58,31 +67,23 @@ export class Downloader {
           if (response.statusCode !== 200) {
             throw new Error(`start downloading failed. Status code is not 200! Unable to get downloaded filename from url: ${link}`)
           }
-
-          const filename = link.split("/").pop()
-          if (!filename) {
-            throw new Error(`Unable to get filename for URL ${link}`)
-          }
-
           if (!!startCallback && !!response.headers['content-length' ]) {
             // Change the total bytes value to get progress later
             const size = parseInt(response.headers['content-length']);
             startCallback(size)
           }
 
-          const filePath = path.join(savePath, filename)
-          const file = fs.createWriteStream(filePath);
-          response.pipe(file).on('data', (chunk) => {
-              if (!!advanceCallback) {
-                advanceCallback(chunk.length)
-              }
-            })
-        }).on('finish', () => {
-
-          if (!!finishCallback) {
-            finishCallback();
-          }
-          resolve(true)
+          response.on('data', (chunk) => {
+            if (!!advanceCallback) {
+              advanceCallback(chunk.length)
+            }
+          }).pipe(file).on('finish', () => {
+            file.close()
+            if (!!finishCallback) {
+              finishCallback();
+            }
+            resolve(true)
+          })
         })
     })
   }

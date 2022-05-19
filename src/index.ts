@@ -51,16 +51,17 @@ import {
   // Start downloading files
   const links = await downloader.getFileDownloadLinks(process.env.DOWNLOAD_TYPE as DownloadType)
 
+  const downloadEachFilesProgressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   for (const link of links) {
-    const downloadEachFilesProgressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
     await downloader.startDownloading(
       link,
       workdir,
       (size) => downloadEachFilesProgressBar.start(size, 0),
-      (size) => downloadEachFilesProgressBar.update(size),
-      () => downloadEachFilesProgressBar.stop())
+      (size) => downloadEachFilesProgressBar.increment(size),
+      () => {})
+    downloadEachFilesProgressBar.stop()
   }
 
 })()
