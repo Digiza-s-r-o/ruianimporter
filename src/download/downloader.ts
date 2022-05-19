@@ -3,8 +3,8 @@ import { Inject, Service } from 'typedi'
 import fetch from 'cross-fetch'
 
 import fs from 'fs'
-import https from 'https'
-import * as path from 'path'
+import got from 'got'
+import { pipeline } from '../stream/pipeline'
 
 export const DOWNLOAD_TYPE_INCREMENTAL = 'INCREMENTAL'
 export const DOWNLOAD_TYPE_COMPLETE = 'COMPLETE'
@@ -19,6 +19,7 @@ type getUrlAddressLinks = {
   [DOWNLOAD_TYPE_INCREMENTAL]: string
   [DOWNLOAD_TYPE_COMPLETE]: string
 }
+
 
 @Service()
 export class Downloader {
@@ -48,43 +49,27 @@ export class Downloader {
   // RegExp to extract the filename from Content-Disposition
   private getFilenameRegex = /filename=\"(.*)\"/gi;
 
-  async startDownloading(link: string, savePath: string, startCallback: (size: number) => void, advanceCallback: (size: number) => void | undefined, finishCallback: () => void | undefined): Promise<boolean> {
+  async startDownloading(link: string, filePath: string, startCallback: (size: number) => void, advanceCallback: (size: number) => void | undefined): Promise<void> {
     const url = new URL(link)
 
-    const filename = link.split("/").pop()
-    if (!filename) {
-      throw new Error(`Unable to get filename for URL ${link}`)
-    }
+    const stream = got.stream(url).on('response', (response) => {
+      // check if response is success
+      if (response.statusCode !== 200) {
+        throw new Error(`start downloading failed. Status code is not 200! Unable to get downloaded filename from url: ${link}`)
+      }
+      if (!!startCallback && !!response.headers['content-length' ]) {
+        // Change the total bytes value to get progress later
+        const size = parseInt(response.headers['content-length']);
+        startCallback(size)
+      }
 
-    const filePath = path.join(savePath, filename)
-    const file = fs.createWriteStream(filePath);
-
-    return new Promise((resolve) => {
-        const stream = https.get(url)
-
-        stream.on('response', (response) => {
-          // check if response is success
-          if (response.statusCode !== 200) {
-            throw new Error(`start downloading failed. Status code is not 200! Unable to get downloaded filename from url: ${link}`)
-          }
-          if (!!startCallback && !!response.headers['content-length' ]) {
-            // Change the total bytes value to get progress later
-            const size = parseInt(response.headers['content-length']);
-            startCallback(size)
-          }
-
-          response.on('data', (chunk) => {
-            if (!!advanceCallback) {
-              advanceCallback(chunk.length)
-            }
-          }).pipe(file).on('finish', () => {
-            file.close()
-            if (!!finishCallback) {
-              finishCallback();
-            }
-            resolve(true)
-          })
-        })
+      response.on('data', (chunk: any) => {
+        if (!!advanceCallback) {
+          advanceCallback(chunk.length)
+        }
+      })
     })
+
+    return await pipeline(stream,fs.createWriteStream(filePath))
   }
 }

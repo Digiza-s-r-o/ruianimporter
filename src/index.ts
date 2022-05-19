@@ -1,7 +1,8 @@
 import 'reflect-metadata'
 import 'dotenv/config'
 import cliProgress from 'cli-progress'
-import * as fs from 'fs/promises'
+import * as fsPromises from 'fs/promises'
+import * as fs from 'fs'
 import {Container} from 'typedi'
 import saxes from 'saxes'
 import {
@@ -10,6 +11,8 @@ import {
   Downloader, DownloadType,
   isSupportedDownloadType
 } from './download/downloader'
+import path from 'path'
+import { Extractor } from './zip/extractor'
 
 (async () => {
   const workdir = process.env.WORK_DIR
@@ -35,7 +38,7 @@ import {
     throw new Error('DOWNLOAD_TYPE environment variable is required!')
   }
 
-  await fs.mkdir(workdir, {recursive:true}).catch((err) => {
+  await fsPromises.mkdir(workdir, {recursive:true}).catch((err) => {
     //decide what you want to do if this failed
     console.error(err);
   });
@@ -47,6 +50,7 @@ import {
 
   Container.set('download.links', downloadLinks)
   const downloader = Container.get(Downloader)
+  const extractor = Container.get(Extractor)
 
   // Start downloading files
   const links = await downloader.getFileDownloadLinks(process.env.DOWNLOAD_TYPE as DownloadType)
@@ -54,13 +58,35 @@ import {
   const downloadEachFilesProgressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   for (const link of links) {
+    const filename = link.split("/").pop()
+    if (!filename) {
+      throw new Error(`Unable to get filename for URL ${link}`)
+    }
+
+    const filePath = path.join(workdir, filename)
 
     await downloader.startDownloading(
       link,
-      workdir,
+      filePath,
       (size) => downloadEachFilesProgressBar.start(size, 0),
-      (size) => downloadEachFilesProgressBar.increment(size),
-      () => {})
+      (size) => downloadEachFilesProgressBar.increment(size))
+    downloadEachFilesProgressBar.stop()
+  }
+
+  // Our downloading got finished!
+  // Now we need to extract the files
+  // After the extraction, let's delete old .zip files
+
+  const fileNames = fs.readdirSync(workdir);
+  for (const filename of fileNames) {
+    const sourcePath = path.join(workdir, filename)
+    const destinationPath = path.join(workdir, filename.replace('.zip', ''))
+
+    await extractor.extractFile(
+      sourcePath,
+      destinationPath,
+      (size) => downloadEachFilesProgressBar.start(size, 0),
+      (size) => downloadEachFilesProgressBar.increment(size))
     downloadEachFilesProgressBar.stop()
   }
 

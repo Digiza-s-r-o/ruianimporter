@@ -9,6 +9,7 @@
   "private": false,
   "devDependencies": {
     "@types/cli-progress": "^3.11.0",
+    "@types/unzip-stream": "^0.3.1",
     "@typescript-eslint/eslint-plugin": "^5.25.0",
     "eslint": "^8.15.0",
     "eslint-config-prettier": "^8.5.0",
@@ -23,9 +24,11 @@
     "cli-progress": "^3.11.1",
     "cross-fetch": "^3.1.5",
     "dotenv": "^16.0.1",
+    "got": "^12.0.4",
     "reflect-metadata": "^0.1.13",
     "saxes": "^6.0.0-rc.1",
-    "typedi": "^0.10.0"
+    "typedi": "^0.10.0",
+    "unzip-stream": "^0.3.1"
   },
   "scripts": {
     "lint": "yarn run eslint ./src",
@@ -36,6 +39,6 @@
     "prepare": "husky install",
     "dev": "DOWNLOAD_TYPE=COMPLETE node --experimental-specifier-resolution=node --loader ts-node/esm ./src/index.ts",
     "build": "tsc --skipLibCheck && cp .env ./dist/.env",
-    "start": "cd ./dist && DOWNLOAD_TYPE=COMPLETE node --experimental-specifier-resolution=node ./index.js"
+    "start": "cd ./dist && DOWNLOAD_TYPE=COMPLETE NODE_ENV=production node --experimental-specifier-resolution=node ./index.js"
   }
 }
