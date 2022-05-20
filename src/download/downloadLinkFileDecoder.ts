@@ -1,6 +1,6 @@
 import { Service } from 'typedi'
 
-type DownloadLinks = string[]
+export type DownloadLinks = string[]
 
 @Service()
 export class DownloadLinkFileDecoder {
