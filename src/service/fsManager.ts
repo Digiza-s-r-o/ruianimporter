@@ -18,4 +18,9 @@ export class FsManager {
   createDirectory(path: string): void {
     fs.mkdirSync(path)
   }
+
+  countFiles(path: string): number {
+    const result = fs.readdirSync(path)
+    return result.length
+  }
 }

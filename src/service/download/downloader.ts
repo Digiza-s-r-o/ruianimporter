@@ -61,7 +61,7 @@ export class Downloader {
   private getFilenameRegex = /filename=\"(.*)\"/gi;
 
 
-  async startDownloading(link: string, filePath: string, startCallback: (size: number) => void, advanceCallback: (size: number) => void | undefined, retryCount = 0): Promise<void> {
+  async startDownloading(link: string, filePath: string, startCallback?: ((size: number) => void), advanceCallback?: ((size: number) => void), retryCount = 0): Promise<void> {
     const url = new URL(link)
 
     if (retryCount >= MAX_RETRY_COUNT) {
@@ -69,27 +69,12 @@ export class Downloader {
     }
 
     try {
-      const stream = got.stream(url, { throwHttpErrors: false, retry: { limit: 5, } }).on('response', (response) => {
-        // check if response is success
-        if (response.statusCode !== 200) {
-          throw new Error(`start downloading failed. Status code is not 200! Unable to get downloaded filename from url: ${link}`)
-        }
-        if (!!startCallback && !!response.headers['content-length']) {
-          // Change the total bytes value to get progress later
-          const size = parseInt(response.headers['content-length']);
-          startCallback(size)
-        }
-
-        response.on('data', (chunk: any) => {
-          if (!!advanceCallback) {
-            advanceCallback(chunk.length)
-          }
-        })
-
-        response.on('retry', () => this.startDownloading(link, filePath, startCallback, advanceCallback))
+      let fileStream = fs.createWriteStream(filePath)
+      const stream = got.stream(url, { throwHttpErrors: false, retry: { limit: 5, } }).on('retry', function(params) {
+        fileStream = fs.createWriteStream(filePath)
       })
 
-      return await pipeline(stream, fs.createWriteStream(filePath))
+      return await pipeline(stream, fileStream)
     } catch (e) {
       console.log(`Error while downloading file ${link} occured`)
       return this.startDownloading(link, filePath, startCallback, advanceCallback, retryCount + 1)
