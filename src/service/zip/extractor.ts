@@ -1,6 +1,5 @@
 import * as fs from 'fs'
 import unzip from 'unzip-stream'
-import { pipeline } from '../stream/pipeline'
 import { Service } from 'typedi'
 
 @Service()
