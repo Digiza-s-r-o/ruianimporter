@@ -42,7 +42,11 @@ export class ProcessManager {
       }
 
       try {
-        return await process.doStart(previousProgressData, lastProgress, progressBar, this.saveProgress(progressFile))
+        let finishedData = await process.doStart(previousProgressData, lastProgress, progressBar, this.saveProgress(progressFile))
+        finishedData.finished = true
+        this.saveProgress(progressFile)(finishedData)
+
+        return finishedData
       } catch (e) {
         return this.start(process, progressBar, previousProgressData, retryCount + 1)
       }

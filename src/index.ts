@@ -5,7 +5,7 @@ import * as fsPromises from 'fs/promises'
 import {Container} from 'typedi'
 import {
   DOWNLOAD_TYPE_COMPLETE,
-  DOWNLOAD_TYPE_INCREMENTAL,
+  DOWNLOAD_TYPE_INCREMENTAL, getUrlAddressLinks,
   isSupportedDownloadType
 } from './service/download'
 import { ProcessManager } from './service/processManager'
@@ -23,9 +23,14 @@ import { ExtractProcess } from './process/extractFilesProcess'
     throw new Error('INCREMENTAL_DATABASE_LINKS environment variable is not specified inside of .env file!')
   }
 
-  const fulldatabaselinks = process.env.FULL_DATABASE_LINKS
+  const fulldatabaselinks = process.env.FULL_ADDRESS_LINKS
   if (!fulldatabaselinks) {
-    throw new Error('FULL_DATABASE_LINKS environment variable is not specified inside of .env file!')
+    throw new Error('FULL_ADDRESS_LINKS environment variable is not specified inside of .env file!')
+  }
+
+  const fullregionslinks = process.env.FULL_REGIONS_LINKS
+  if (!fullregionslinks) {
+    throw new Error('FULL_REGIONS_LINKS environment variable is not specified inside of .env file!')
   }
 
   if (!process.env.DOWNLOAD_TYPE) {
@@ -41,9 +46,9 @@ import { ExtractProcess } from './process/extractFilesProcess'
     console.error(err);
   });
 
-  const downloadLinks = {
-    [DOWNLOAD_TYPE_INCREMENTAL]: process.env.INCREMENTAL_DATABASE_LINKS,
-    [DOWNLOAD_TYPE_COMPLETE]: process.env.FULL_DATABASE_LINKS
+  const downloadLinks: getUrlAddressLinks = {
+    [DOWNLOAD_TYPE_INCREMENTAL]: process.env.INCREMENTAL_DATABASE_LINKS as string,
+    [DOWNLOAD_TYPE_COMPLETE]: { addresses: process.env.FULL_ADDRESS_LINKS as string, regions: process.env.FULL_REGIONS_LINKS as string}
   }
 
   Container.set('download.links', downloadLinks)
@@ -66,7 +71,7 @@ import { ExtractProcess } from './process/extractFilesProcess'
   // Now we need to extract the files
   // After the extraction, let's delete old .zip files
   console.log('Starting to extract .zip files...')
-  await processManager.start(extractProcess, progressBar, result)
+  // await processManager.start(extractProcess, progressBar, result)
 
 
 
