@@ -48,6 +48,7 @@ export class ProcessManager {
 
         return finishedData
       } catch (e) {
+        this.saveProgress(progressFile)(lastProgress)
         return this.start(process, progressBar, previousProgressData, retryCount + 1)
       }
   }

@@ -70,8 +70,9 @@ export class Downloader {
 
     try {
       let fileStream = fs.createWriteStream(filePath)
-      const stream = got.stream(url, { throwHttpErrors: false, retry: { limit: 5, } }).on('retry', function(params) {
+      const stream = got.stream(url, { throwHttpErrors: false, retry: { limit: MAX_RETRY_COUNT, } }).on('retry', function(params) {
         fileStream = fs.createWriteStream(filePath)
+        console.log(params)
       })
 
       return await pipeline(stream, fileStream)

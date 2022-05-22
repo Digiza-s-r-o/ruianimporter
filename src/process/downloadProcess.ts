@@ -21,15 +21,16 @@ export class DownloadProcess implements Process<DownloadProcessData> {
    }
 
     async doStart(previousProgressData: ProgressData<unknown> | undefined, progress: ProgressData<DownloadProcessData>, progressBar: cliProgress.SingleBar, saveProgress: (progress: ProgressData<DownloadProcessData>) => void) {
+
+      const links = await this.downloader.getFileDownloadLinks(process.env.DOWNLOAD_TYPE as DownloadType) as unknown as DownloadLinks
       if (!progress.data) {
-        const links = await this.downloader.getFileDownloadLinks(process.env.DOWNLOAD_TYPE as DownloadType) as unknown as DownloadLinks
-        progress.data = {yetToDownload: links, downloaded: [], currentPosition: 0, total: links.length}
+        progress.data = {yetToDownload: links, downloaded: [], currentPosition: 1, total: links.length}
       }
 
       saveProgress(progress)
       progressBar.start(progress.data?.total, progress.data?.currentPosition)
 
-      for (const link of progress.data?.yetToDownload) {
+      for (const link of links) {
         const filename = link.split("/").pop()
         if (!filename) {
           throw new Error(`Unable to get filename for URL ${link}`)
@@ -41,10 +42,8 @@ export class DownloadProcess implements Process<DownloadProcessData> {
           // We don't want to progress in position since we've already got downloaded this file
           // progress.data.currentPosition = progress.data?.currentPosition + 1
           // progressBar.increment(1)
-
           progress.data.yetToDownload.shift()
-
-          saveProgress(progress)
+          console.log(`filePath ${filePath} already exists. ${progress.data.yetToDownload.length} left. Skipping... `)
           continue
         }
         await this.downloader.startDownloading(link, filePath)
@@ -54,9 +53,9 @@ export class DownloadProcess implements Process<DownloadProcessData> {
         progress.data.currentPosition = progress.data?.currentPosition + 1
         progress.data.yetToDownload.shift()
         progress.data.downloaded = [...progress.data?.downloaded, link]
-        saveProgress(progress)
       }
       progressBar.stop()
+      saveProgress(progress)
 
       return progress
     }
