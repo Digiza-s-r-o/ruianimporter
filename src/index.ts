@@ -10,7 +10,13 @@ import {
 } from './service/download'
 import { ProcessManager } from './service/processManager'
 import { DownloadProcess } from './process/downloadProcess'
-import { ExtractProcess } from './process/extractFilesProcess'
+import { DataProcessorManager } from './service/dataProcessor'
+import StreamZip from 'node-stream-zip'
+import stdout from 'stdout-stream'
+import { FsManager } from './service/fsManager'
+import * as path from 'path'
+import { PlainOutputFormatter } from './service/outputFormatter/plain'
+import * as fs from 'fs'
 
 (async () => {
   const workdir = process.env.WORK_DIR
@@ -55,25 +61,44 @@ import { ExtractProcess } from './process/extractFilesProcess'
   Container.set('process.workdir', workdir)
   const processManager = Container.get(ProcessManager)
   const downloadProcess = Container.get(DownloadProcess)
-  const extractProcess = Container.get(ExtractProcess)
+  const fsManager = Container.get(FsManager)
 
-  const progressBar = new cliProgress.SingleBar({ }, cliProgress.Presets.shades_classic)
+  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
 
   // Start downloading files;
 
   console.log('Starting to download .zip files...')
-  const result = await processManager.start(downloadProcess, progressBar)
+  // const result = await processManager.start(downloadProcess, progressBar)
+  // if (!result.data?.total) {
+  //   throw new Error('Malformed download progress data!')
+  // }
 
 
+  progressBar.start(31295, 1)
+  const workDirPath = 'workdir/downloadProcess'
+
+  console.log('Starting to unzip .zip files...')
+  const dataProcessor = new DataProcessorManager()
+  const plainTextFormatter = new PlainOutputFormatter()
 
 
-  // Our downloading got finished!
-  // Now we need to extract the files
-  // After the extraction, let's delete old .zip files
-  console.log('Starting to extract .zip files...')
-  // await processManager.start(extractProcess, progressBar, result)
+  // const filePath = path.join(workDirPath, '20211231_OB_500101_UKSH.xml')
+  // const readStream = fs.createReadStream(filePath)
+  // await dataProcessor.convert(readStream, stdout, plainTextFormatter)
+  // process.exit()
 
+  const files = fsManager.getFilesInDir(workDirPath)
+  for (const fileName of files) {
+    const filePath = path.join(workDirPath, fileName)
+    const fileNameInside =  fileName.replace(/\.zip$/, '')
 
+    const zip = new StreamZip.async({ file: filePath });
+    const unzipStream = await zip.stream(fileNameInside)
 
+    await dataProcessor.convert(unzipStream, stdout, plainTextFormatter)
 
+    progressBar.increment(1)
+  }
+
+  process.exit(0)
 })()

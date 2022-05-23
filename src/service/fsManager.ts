@@ -23,4 +23,8 @@ export class FsManager {
     const result = fs.readdirSync(path)
     return result.length
   }
+
+  getFilesInDir(path: string): string[] {
+    return fs.readdirSync(path);
+  }
 }

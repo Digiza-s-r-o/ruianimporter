@@ -4,7 +4,7 @@ import fetch from 'cross-fetch'
 
 import fs from 'fs'
 import got from 'got'
-import { pipeline } from '../stream'
+import { pipeline } from '../../stream'
 
 export const DOWNLOAD_TYPE_INCREMENTAL = 'INCREMENTAL'
 export const DOWNLOAD_TYPE_COMPLETE = 'COMPLETE'
