@@ -1,6 +1,6 @@
 import 'reflect-metadata'
 import 'dotenv/config'
-import cliProgress from 'cli-progress'
+import cliProgress, { SingleBar } from 'cli-progress'
 import * as fsPromises from 'fs/promises'
 import {Container} from 'typedi'
 import {
@@ -16,7 +16,11 @@ import stdout from 'stdout-stream'
 import { FsManager } from './service/fsManager'
 import * as path from 'path'
 import { PlainOutputFormatter } from './service/outputFormatter/plain'
+import workerpool, { Promise as WorkerpoolPromise } from 'workerpool'
 import * as fs from 'fs'
+import { OutputFormatter } from './service/outputFormatter/types'
+import { spawn, Worker } from 'threads'
+import { v4 } from 'uuid'
 
 (async () => {
   const workdir = process.env.WORK_DIR
@@ -79,7 +83,6 @@ import * as fs from 'fs'
 
   console.log('Starting to unzip .zip files...')
   const dataProcessor = new DataProcessorManager()
-  const plainTextFormatter = new PlainOutputFormatter()
 
 
   // const filePath = path.join(workDirPath, '20211231_OB_500101_UKSH.xml')
@@ -87,18 +90,27 @@ import * as fs from 'fs'
   // await dataProcessor.convert(readStream, stdout, plainTextFormatter)
   // process.exit()
 
+  const MAX_THREADS = 8
+
+  const pool = workerpool.pool('./worker/processor.js');
+  let promises: {[key: string]: WorkerpoolPromise<ReturnType<any>>} = {}
   const files = fsManager.getFilesInDir(workDirPath)
   for (const fileName of files) {
-    const filePath = path.join(workDirPath, fileName)
-    const fileNameInside =  fileName.replace(/\.zip$/, '')
+    const idWorker = v4()
+    const currentPromise = pool.exec('processFile', [workDirPath, fileName])
+    currentPromise.then(() => {
+      delete promises[idWorker]
+    })
 
-    const zip = new StreamZip.async({ file: filePath });
-    const unzipStream = await zip.stream(fileNameInside)
+    promises[idWorker] = currentPromise
 
-    await dataProcessor.convert(unzipStream, stdout, plainTextFormatter)
+    if (Object.keys(promises).length >= MAX_THREADS && await Promise.any(Object.values(promises))) {
+      continue
+    }
 
     progressBar.increment(1)
   }
 
   process.exit(0)
 })()
+
