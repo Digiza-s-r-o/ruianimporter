@@ -144,17 +144,15 @@ export class DataProcessorManager {
             }
           }
 
-          if (!!collector?.currentNodeCollection?.parent) {
-            collector.currentNodeCollection = collector.currentNodeCollection.parent
-          }
 
           const output = processor.convertData(collector.currentNodeCollection)
           const convertedOutput = outputFormatter.format(output)
 
-          this.parser.emit('data', convertedOutput)
-          outputWriter.write(convertedOutput)
+          if (!!collector?.currentNodeCollection?.parent) {
+            collector.currentNodeCollection = collector.currentNodeCollection.parent
+          }
 
-
+          // outputWriter.write(convertedOutput)
         })
       })
 
@@ -167,7 +165,6 @@ export class DataProcessorManager {
         while (null !== (chunk = inputReader.read())) {
           this.parser.write(chunk)
         }
-        // this.parser.end()
       })
 
 

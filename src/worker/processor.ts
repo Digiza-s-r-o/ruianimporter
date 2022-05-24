@@ -1,23 +1,30 @@
 import { DataProcessorManager } from '../service/dataProcessor'
 import path from 'path'
-import StreamZip from 'node-stream-zip'
 import { PlainOutputFormatter } from '../service/outputFormatter/plain'
 import stdout from 'stdout-stream'
 import workerpool from 'workerpool'
-
-
-const dataProcessor = new DataProcessorManager()
-const plainTextFormatter = new PlainOutputFormatter()
+import yauzl from 'yauzl'
 
 const processFile = async (workDir: string, fileName: string) => {
+  const dataProcessor = new DataProcessorManager()
+  const plainTextFormatter = new PlainOutputFormatter()
 
   const filePath = path.join(workDir, fileName)
-  const fileNameInside =  fileName.replace(/\.zip$/, '')
 
-  const zip = new StreamZip.async({ file: filePath });
-  const unzipStream = await zip.stream(fileNameInside)
+  const promise = new Promise<void>(resolve => {
+  yauzl.open(filePath, {lazyEntries: true}, function(err, zipfile) {
+    zipfile.readEntry();
+    zipfile.on("entry", function(entry) {
+      zipfile.openReadStream(entry, function(err, readStream) {
+        dataProcessor.convert(readStream, stdout, plainTextFormatter).then(() => {
+          resolve()
+        })
+      })
+    })
+  })
+  })
 
-  await dataProcessor.convert(unzipStream, stdout, plainTextFormatter)
+  await promise
 }
 
 workerpool.worker({
