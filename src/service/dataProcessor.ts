@@ -11,11 +11,8 @@ import { RegionProcessor } from './processor/region'
 import { CountyProcessor } from './processor/county'
 import { PragueDistrictProcessor } from './processor/pragueDistrict'
 import { StreetProcessor } from './processor/street'
-import { finished, Readable, Writable } from 'stream'
+import { Writable } from 'stream'
 import { OutputFormatter } from './outputFormatter/types'
-import * as StreamPromises from "stream/promises";
-import { promisify } from 'util'
-import { pipeline } from '../stream'
 
 export interface DataProcessor {
   canBeUsed(): boolean
@@ -27,6 +24,7 @@ export class DataCollection {
     this.children = {}
   }
 
+  depth!: number
   parent?: DataCollection
   nodeName!: string
   text?: string
@@ -60,8 +58,6 @@ export class OutputDataValues {
   value!: string
 }
 
-const promisifyAsync = promisify(finished)
-
 export class DataProcessorManager {
   private readonly processorsMap: {[key: string]: DataProcessor} = {
     ['vf:Obec']: new MunicipalityProcessor(),
@@ -85,6 +81,7 @@ export class DataProcessorManager {
         const collection = new DataCollection()
         collection.nodeName = name
         collection.attributes = attrs
+        collection.depth = collector.depth
 
         // Collectora inicializujeme jenom v případě, že vstupujeme do prvku: vf:Data
         if (!collector.topLevelDataCollection && name === 'vf:Data') {
@@ -149,6 +146,10 @@ export class DataProcessorManager {
             }
           }
 
+          if (!!collector?.currentNodeCollection?.parent) {
+            collector.currentNodeCollection = collector.currentNodeCollection.parent
+          }
+
           const output = processor.convertData(collector.currentNodeCollection)
           const convertedOutput = outputFormatter.format(output)
 
@@ -174,5 +175,6 @@ export class DataProcessorManager {
 
       await promise
       this.parser.removeAllListeners()
+      inputReader.removeAllListeners()
   }
 }
