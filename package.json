@@ -50,6 +50,6 @@
     "prepare": "husky install",
     "dev": "DOWNLOAD_TYPE=COMPLETE ts-node ./src/index.ts",
     "build": "tsc --skipLibCheck && cp .env ./dist/.env",
-    "start": "cd ./dist && DOWNLOAD_TYPE=COMPLETE NODE_ENV=production node --experimental-specifier-resolution=node  ./index.js"
+    "start": "cd ./dist && DOWNLOAD_TYPE=COMPLETE NODE_ENV=production node --experimental-specifier-resolution=node ./index.js"
   }
 }

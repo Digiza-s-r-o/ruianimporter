@@ -40,7 +40,6 @@ class DataCollector {
   depth!: number
   currentNodeCollection!: DataCollection
   topLevelDataCollection!: DataCollection
-  parentNodeCollection!: DataCollection | null
 }
 
 export class OutputData {
@@ -75,7 +74,7 @@ export class DataProcessorManager {
   private readonly parser = new Parser()
 
     async convert(inputReader: NodeJS.ReadableStream, outputWriter: Writable, outputFormatter: OutputFormatter) {
-      let collector = new DataCollector(1)
+      const collector = new DataCollector(1)
       this.parser.on('opentag', (name: string, attrs: {[key: string]: string}) => {
         collector.depth++
         const collection = new DataCollection()
@@ -97,11 +96,10 @@ export class DataProcessorManager {
 
         const parentCollection = collector.currentNodeCollection
         collection.parent = parentCollection
-        collector.parentNodeCollection = parentCollection
         collector.currentNodeCollection = collection
 
         // Nechceme ukládat veškerá data
-        if (collector.topLevelDataCollection !== collector.parentNodeCollection) {
+        if (collector.topLevelDataCollection !== collector.currentNodeCollection.parent) {
           parentCollection.children[name] = collection
         }
       })
@@ -137,7 +135,7 @@ export class DataProcessorManager {
 
           // U katastrálního území se jmenuje kontejner stejně jako prvek. My potřebujeme zpracovávat jedině prvek
           // Takže si ověříme, jestli vf:KatastralniUzemi obsahuje parent vf:KatastralniUzemi
-          if (!!collector?.currentNodeCollection?.parent && collector.parentNodeCollection?.nodeName !== name) {
+          if (!!collector?.currentNodeCollection?.parent && collector.currentNodeCollection.parent?.nodeName !== name) {
             switch (true) {
               case processor instanceof CadastralProcessor:
               case processor instanceof StreetProcessor:
